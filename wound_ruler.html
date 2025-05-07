@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>傷口紀錄表</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js">  // 自動填入今天日期
+    const dateInput = document.getElementById('measure-date');
+    const today = new Date().toISOString().split('T')[0];
+    dateInput.value = today;
+
+    // 歷史紀錄保存功能
+    const history = [];
+    function saveToHistory() {
+      const data = {
+        name: document.getElementById('patient-name').value,
+        id: document.getElementById('patient-id').value,
+        date: dateInput.value,
+        site: document.getElementById('wound-site').value,
+        length: lengthInput.value,
+        width: widthInput.value,
+        area: areaResult.textContent
+      };
+      history.push(data);
+      console.log('📋 傷口紀錄已儲存：', data);
+    }
+
+    // 在匯出圖片和PDF時一併儲存紀錄
+    function saveAsImage() {
+      saveToHistory();
+      html2canvas(document.getElementById('capture-area')).then(canvas => {
+        const link = document.createElement('a');
+        link.download = 'wound-ruler.png';
+        link.href = canvas.toDataURL();
+        link.click();
+      });
+    }
+
+    function saveAsPDF() {
+      saveToHistory();
+      html2canvas(document.getElementById('capture-area')).then(canvas => {
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jspdf.jsPDF('p', 'mm', 'a4');
+        const width = pdf.internal.pageSize.getWidth();
+        const height = canvas.height * width / canvas.width;
+        pdf.addImage(imgData, 'PNG', 0, 10, width, height);
+        pdf.save('wound-ruler.pdf');
+      });
+    }
+</script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 2rem;
+      background-color: #f9f9f9;
+    }
+    .ruler {
+      position: relative;
+      width: 20cm;
+      height: 2cm;
+      border: 2px solid #333;
+      background: white;
+      margin-bottom: 2rem;
+    }
+    .tick {
+      position: absolute;
+      bottom: 0;
+      width: 1px;
+      background: #000;
+    }
+    .tick.cm {
+      height: 20px;
+    }
+    .tick.half {
+      height: 10px;
+    }
+    .label {
+      position: absolute;
+      bottom: 22px;
+      font-size: 12px;
+      color: #000;
+    }
+    .info {
+      font-size: 14px;
+      margin-top: 1rem;
+    }
+    .patient-info {
+      margin-bottom: 2rem;
+      background: #fff;
+      border: 1px solid #ccc;
+      padding: 1rem;
+      max-width: 600px;
+    }
+    .patient-info label {
+      display: inline-block;
+      width: 100px;
+      font-weight: bold;
+    }
+    .patient-info input {
+      width: 200px;
+      padding: 4px;
+      margin-bottom: 0.5rem;
+    }
+    .measure-calc {
+      margin-top: 1rem;
+      background: #fff;
+      border: 1px solid #ccc;
+      padding: 1rem;
+      max-width: 600px;
+    }
+    .measure-calc label {
+      display: inline-block;
+      width: 100px;
+      font-weight: bold;
+    }
+    .measure-calc input {
+      width: 100px;
+      padding: 4px;
+      margin-bottom: 0.5rem;
+    }
+    .measure-calc .result {
+      margin-top: 0.5rem;
+      font-weight: bold;
+      color: #333;
+    }
+    .button-group {
+      margin-top: 1rem;
+    }
+    button {
+      padding: 0.5rem 1rem;
+      margin-right: 1rem;
+      font-size: 14px;
+    }
+    .photo-upload {
+      margin-top: 1rem;
+      background: #fff;
+      border: 1px solid #ccc;
+      padding: 1rem;
+      max-width: 600px;
+    }
+    .photo-upload img {
+      max-width: 100%;
+      margin-top: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>傷口紀錄表</h1>
+
+  <div id="capture-area">
+    <div class="patient-info">
+      <div>
+        <label for="patient-name">姓名：</label>
+        <input type="text" id="patient-name" name="patient-name">
+      </div>
+      <div>
+        <label for="patient-id">病歷號：</label>
+        <input type="text" id="patient-id" name="patient-id">
+      </div>
+      <div>
+        <label for="measure-date">測量日期：</label>
+        <input type="date" id="measure-date" name="measure-date">
+      </div>
+      <div>
+        <label for="wound-site">測量部位：</label>
+        <input type="text" id="wound-site" name="wound-site">
+      </div>
+    </div>
+
+    <div class="measure-calc">
+      <div>
+        <label for="length">傷口長度 (cm)：</label>
+        <input type="number" id="length" step="0.1">
+      </div>
+      <div>
+        <label for="width">傷口寬度 (cm)：</label>
+        <input type="number" id="width" step="0.1">
+      </div>
+      <div class="result" id="areaResult">面積：-- cm²</div>
+    </div>
+
+    
+
+    <div class="photo-upload">
+      <label for="wound-photo">上傳傷口照片：</label>
+      <input type="file" id="wound-photo" accept="image/*">
+      <img id="wound-preview" alt="傷口照片預覽">
+    </div>
+  </div>
+
+  <div class="button-group">
+    <button onclick="saveAsImage()">📸 下載圖片</button>
+    <button onclick="saveAsPDF()">🧾 匯出 PDF</button>
+  </div>
+
+  <div class="info">
+    <p>請確保尺規正確顯示長度（可比對實體尺或信用卡寬度為 8.56 公分進行校正）。</p>
+    <p>此尺可搭配傷口拍照作紀錄，供臨床或教學使用。</p>
+  </div>
+
+  <script>
+    
+
+    const lengthInput = document.getElementById('length');
+    const widthInput = document.getElementById('width');
+    const areaResult = document.getElementById('areaResult');
+
+    function calculateArea() {
+      const length = parseFloat(lengthInput.value);
+      const width = parseFloat(widthInput.value);
+      if (!isNaN(length) && !isNaN(width)) {
+        const area = (length * width).toFixed(2);
+        areaResult.textContent = `面積：${area} cm²`;
+      } else {
+        areaResult.textContent = '面積：-- cm²';
+      }
+    }
+
+    lengthInput.addEventListener('input', calculateArea);
+    widthInput.addEventListener('input', calculateArea);
+
+    document.getElementById('wound-photo').addEventListener('change', function (e) {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function (event) {
+          document.getElementById('wound-preview').src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    function saveAsImage() {
+      html2canvas(document.getElementById('capture-area')).then(canvas => {
+        const link = document.createElement('a');
+        link.download = 'wound-ruler.png';
+        link.href = canvas.toDataURL();
+        link.click();
+      });
+    }
+
+    function saveAsPDF() {
+      html2canvas(document.getElementById('capture-area')).then(canvas => {
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jspdf.jsPDF('p', 'mm', 'a4');
+        const width = pdf.internal.pageSize.getWidth();
+        const height = canvas.height * width / canvas.width;
+        pdf.addImage(imgData, 'PNG', 0, 10, width, height);
+        pdf.save('wound-ruler.pdf');
+      });
+    }
+  </script>
+</body>
+</html>
